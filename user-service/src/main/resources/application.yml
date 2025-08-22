@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: user-service
+  config:
+    import: configserver:http://localhost:8888
+  cloud:
+    config:
+      username: admin
+      password: digital2024
+      fail-fast: true
+  profiles:
+    active: default
