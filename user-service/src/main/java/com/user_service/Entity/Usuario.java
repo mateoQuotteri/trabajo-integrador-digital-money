@@ -1,4 +1,4 @@
-package Entity;
+package com.user_service.Entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -10,31 +10,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Entidad Usuario - Representa un usuario del sistema Digital Money House
- *
- * Esta entidad maneja únicamente la información de identidad del usuario:
- * - Datos personales (nombre, apellido, DNI)
- * - Credenciales de acceso (email, contraseña)
- * - Control de sesiones y autenticación
- *
- * IMPORTANTE: Esta entidad NO contiene información financiera.
- * Los datos de cuenta (CVU, alias, saldo) están en el Account Service.
- *
- * DISEÑO DE MICROSERVICIOS:
- * - Cada microservicio debe ser dueño de sus propios datos
- * - User Service maneja SOLO identidad y autenticación
- * - Account Service maneja SOLO información financiera
- *
- * Esta separación permite:
- * - Escalabilidad independiente
- * - Fallos aislados por dominio
- * - Equipos trabajando en paralelo
- */
 @Entity
 @Table(name = "usuarios", indexes = {
         @Index(name = "idx_email", columnList = "email"),
-        @Index(name = "idx_dni", columnList = "dni")
+        @Index(name = "idx_dni", columnList = "dni"),
+        @Index(name = "idx_cvu", columnList = "cvu"),
+        @Index(name = "idx_alias", columnList = "alias")
 })
 public class Usuario {
 
@@ -69,25 +50,23 @@ public class Usuario {
     @Column(length = 20)
     private String telefono;
 
-    /**
-     * CRÍTICO PARA SEGURIDAD: @JsonIgnore evita que la contraseña
-     * aparezca JAMÁS en responses JSON, incluso por error.
-     * Sin esta anotación, podrías accidentalmente exponer contraseñas.
-     */
     @JsonIgnore
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     @Column(nullable = false)
     private String password;
 
+    @Pattern(regexp = "\\d{22}", message = "El CVU debe tener exactamente 22 dígitos")
+    @Column(unique = true, nullable = false, length = 22)
+    private String cvu;
+
+    @Pattern(regexp = "^[a-z]+\\.[a-z]+\\.[a-z]+$", message = "El alias debe tener formato palabra.palabra.palabra")
+    @Column(unique = true, nullable = false, length = 50)
+    private String alias;
+
     @Column(nullable = false)
     private Boolean activo = true;
 
-    /**
-     * Timestamps automáticos - Hibernate maneja estas fechas
-     * @CreationTimestamp: se setea UNA VEZ al crear la entidad
-     * @UpdateTimestamp: se actualiza CADA VEZ que se modifica la entidad
-     */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
@@ -96,31 +75,12 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime fechaActualizacion;
 
-    /**
-     * Relación con sesiones de usuario para control de JWT
-     * Esto permite:
-     * - Logout efectivo (invalidar tokens específicos)
-     * - Control de sesiones concurrentes
-     * - Auditoría de accesos
-     */
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<SesionUsuario> sesiones = new ArrayList<>();
 
-    // ===============================================
-    // CONSTRUCTORES
-    // ===============================================
-
-    /**
-     * Constructor vacío requerido por JPA
-     */
     public Usuario() {}
 
-    /**
-     * Constructor para crear usuario completo
-     * No incluye ID porque es auto-generado
-     * No incluye fechas porque son automáticas
-     */
     public Usuario(String nombre, String apellido, String dni, String email, String telefono, String password) {
         this.nombre = nombre;
         this.apellido = apellido;
@@ -131,44 +91,33 @@ public class Usuario {
         this.activo = true;
     }
 
-    // ===============================================
-    // MÉTODOS DE NEGOCIO
-    // ===============================================
+    public Usuario(String nombre, String apellido, String dni, String email, String telefono, String password, String cvu, String alias) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.email = email;
+        this.telefono = telefono;
+        this.password = password;
+        this.cvu = cvu;
+        this.alias = alias;
+        this.activo = true;
+    }
 
-    /**
-     * Obtiene el nombre completo formateado
-     * Encapsula la lógica de concatenación
-     */
     public String getNombreCompleto() {
         return this.nombre + " " + this.apellido;
     }
 
-    /**
-     * Desactiva el usuario (soft delete)
-     * Mejor práctica: nunca borrar usuarios, solo desactivar
-     */
     public void desactivar() {
         this.activo = false;
     }
 
-    /**
-     * Reactiva un usuario desactivado
-     */
     public void activar() {
         this.activo = true;
     }
 
-    /**
-     * Valida si el usuario puede iniciar sesión
-     * Encapsula reglas de negocio que podrían expandirse
-     */
     public boolean puedeIniciarSesion() {
         return this.activo;
     }
-
-    // ===============================================
-    // GETTERS Y SETTERS
-    // ===============================================
 
     public Long getId() {
         return id;
@@ -218,16 +167,28 @@ public class Usuario {
         this.telefono = telefono;
     }
 
-    /**
-     * NOTA: Getter de password para uso interno únicamente
-     * Nunca se serializa a JSON gracias a @JsonIgnore
-     */
     public String getPassword() {
         return password;
     }
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getCvu() {
+        return cvu;
+    }
+
+    public void setCvu(String cvu) {
+        this.cvu = cvu;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     public Boolean getActivo() {

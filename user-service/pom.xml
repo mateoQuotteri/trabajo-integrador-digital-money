@@ -15,12 +15,11 @@
 	<groupId>com.digitalhouse.digitalmoney</groupId>
 	<artifactId>user-service</artifactId>
 	<version>1.0.0</version>
-	<n>user-service</n>
+	<name>user-service</name>
 	<description>Microservicio de gestión de usuarios para Digital Money House</description>
 
 	<properties>
 		<java.version>21</java.version>
-		<!-- Versión estable y probada de Spring Cloud -->
 		<spring-cloud.version>2023.0.3</spring-cloud.version>
 	</properties>
 
@@ -47,6 +46,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- Spring Cloud Config Client -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
 		</dependency>
 
 		<!-- Eureka Client para descubrimiento de servicios -->
@@ -86,6 +91,12 @@
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>dotenv-java</artifactId>
+			<version>3.0.0</version>
+		</dependency>
+
 
 		<!-- H2 para desarrollo y testing -->
 		<dependency>
@@ -107,10 +118,6 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
 		</dependency>
 
 		<!-- Testing -->
