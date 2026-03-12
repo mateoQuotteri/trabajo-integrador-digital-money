@@ -1,13 +1,22 @@
 package com.user_service.Service;
 
+import com.user_service.Dtos.LoginResponse;
+import com.user_service.Entity.SesionUsuario;
 import com.user_service.Entity.Usuario;
+import com.user_service.Exception.ContrasenaIncorrectaException;
+import com.user_service.Exception.UsuarioNotFoundException;
+import com.user_service.Repository.SesionUsuarioRepository;
 import com.user_service.Repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.SecureRandom;
-import java.util.Arrays;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -18,15 +27,32 @@ public class UsuarioService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
+    private SesionUsuarioRepository sesionUsuarioRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Lista de palabras para generar alias
-    private static final List<String> PALABRAS = Arrays.asList(
-            "sol", "luna", "estrella", "mar", "rio", "monte", "valle", "bosque",
-            "flor", "arbol", "piedra", "viento", "fuego", "agua", "tierra", "cielo"
-    );
+    @Autowired
+    private JwtService jwtService;
 
     private final Random random = new SecureRandom();
+
+    private List<String> cargarPalabras() {
+        List<String> palabras = new ArrayList<>();
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("palabras-alias.txt");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                String palabra = linea.trim();
+                if (!palabra.isEmpty()) {
+                    palabras.add(palabra);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo cargar el archivo palabras-alias.txt", e);
+        }
+        return palabras;
+    }
 
     public Usuario registrarUsuario(String nombre, String apellido, String dni,
                                     String email, String telefono, String password) {
@@ -41,18 +67,51 @@ public class UsuarioService {
             throw new IllegalArgumentException("El DNI ya está registrado");
         }
 
-        // Generar CVU y alias únicos
-        String cvu = generarCVUUnico();
-        String alias = generarAliasUnico();
-
         // Crear usuario con contraseña hasheada
         Usuario usuario = new Usuario(nombre, apellido, dni, email, telefono,
                 passwordEncoder.encode(password));
 
-        // Necesitarás agregar setters para CVU y alias en la entidad Usuario
-        // o modificar el constructor
+        // ✅ ASIGNAR CVU Y ALIAS GENERADOS
+        usuario.setCvu(generarCVUUnico());
+        usuario.setAlias(generarAliasUnico());
 
         return usuarioRepository.save(usuario);
+    }
+
+    public LoginResponse login(String email, String password) {
+        Usuario usuario = usuarioRepository.findByEmailAndActivo(email)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario inexistente"));
+
+        if (!passwordEncoder.matches(password, usuario.getPassword())) {
+            throw new ContrasenaIncorrectaException("Contraseña incorrecta");
+        }
+
+        String token = jwtService.generarToken(usuario.getId(), usuario.getEmail());
+
+        // Guardar sesión
+        SesionUsuario sesion = new SesionUsuario(
+                usuario,
+                String.valueOf(token.hashCode()),
+                LocalDateTime.now().plusSeconds(86400)
+        );
+        sesionUsuarioRepository.save(sesion);
+
+        LoginResponse.UserDto userDto = new LoginResponse.UserDto(
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getNombre(),
+                usuario.getApellido()
+        );
+
+        return new LoginResponse(token, userDto);
+    }
+
+    public void logout(String token) {
+        String tokenHash = String.valueOf(token.hashCode());
+        SesionUsuario sesion = sesionUsuarioRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada"));
+        sesion.invalidar();
+        sesionUsuarioRepository.save(sesion);
     }
 
     private String generarCVUUnico() {
@@ -70,11 +129,12 @@ public class UsuarioService {
     }
 
     private String generarAliasUnico() {
+        List<String> palabras = cargarPalabras();
         String alias;
         do {
-            alias = PALABRAS.get(random.nextInt(PALABRAS.size())) + "." +
-                    PALABRAS.get(random.nextInt(PALABRAS.size())) + "." +
-                    PALABRAS.get(random.nextInt(PALABRAS.size()));
+            alias = palabras.get(random.nextInt(palabras.size())) + "." +
+                    palabras.get(random.nextInt(palabras.size())) + "." +
+                    palabras.get(random.nextInt(palabras.size()));
         } while (usuarioRepository.existsByAlias(alias));
 
         return alias;
