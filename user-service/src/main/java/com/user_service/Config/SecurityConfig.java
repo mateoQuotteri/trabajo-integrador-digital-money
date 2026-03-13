@@ -30,10 +30,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ PATHS que usa el frontend:
-                        .requestMatchers("/register", "/login", "/user/logout").permitAll()
-                        .requestMatchers("/h2-console/**", "/test").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .headers(headers -> headers.frameOptions().sameOrigin());
 

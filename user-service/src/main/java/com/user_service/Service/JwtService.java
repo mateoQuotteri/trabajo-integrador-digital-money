@@ -21,12 +21,13 @@ public class JwtService {
     @Value("${jwt.issuer}")
     private String issuer;
 
-    public String generarToken(Long userId, String email) {
+    public String generarToken(Long userId, String email, String rol) {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
+                .claim("rol", rol)
                 .issuer(issuer)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))

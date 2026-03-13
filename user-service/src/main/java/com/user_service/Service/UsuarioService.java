@@ -71,7 +71,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario(nombre, apellido, dni, email, telefono,
                 passwordEncoder.encode(password));
 
-        // ✅ ASIGNAR CVU Y ALIAS GENERADOS
+        // asIGNAR CVU Y ALIAS GENERADOS
         usuario.setCvu(generarCVUUnico());
         usuario.setAlias(generarAliasUnico());
 
@@ -86,7 +86,7 @@ public class UsuarioService {
             throw new ContrasenaIncorrectaException("Contraseña incorrecta");
         }
 
-        String token = jwtService.generarToken(usuario.getId(), usuario.getEmail());
+        String token = jwtService.generarToken(usuario.getId(), usuario.getEmail(), usuario.getRol().name());
 
         // Guardar sesión
         SesionUsuario sesion = new SesionUsuario(

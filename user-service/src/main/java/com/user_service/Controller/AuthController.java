@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/users")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
@@ -78,7 +79,7 @@ public class AuthController {
     }
 
 
-    @PostMapping("/user/logout")
+    @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
         try {
             String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;

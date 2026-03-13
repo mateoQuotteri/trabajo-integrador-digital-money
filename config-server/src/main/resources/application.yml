@@ -85,7 +85,7 @@ config-server:
 info:
   app:
     name: Digital Money House Config Server
-    description: Servidor de configuración centralizada para microservicios
+    description: Servidor de configuraciï¿½n centralizada para microservicios
     version: 1.0.0
 
   config:
@@ -96,6 +96,7 @@ info:
       - prod
     services-supported:
       - user-service
+      - eureka-server
       - account-service
       - card-service
       - transaction-service

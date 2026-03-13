@@ -2,6 +2,7 @@ package com.user_service.Entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.user_service.Entity.Rol;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -63,6 +64,10 @@ public class Usuario {
     @Pattern(regexp = "^[a-z]+\\.[a-z]+\\.[a-z]+$", message = "El alias debe tener formato palabra.palabra.palabra")
     @Column(unique = true, nullable = false, length = 50)
     private String alias;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Rol rol = Rol.ROLE_USER;
 
     @Column(nullable = false)
     private Boolean activo = true;
@@ -189,6 +194,14 @@ public class Usuario {
 
     public void setAlias(String alias) {
         this.alias = alias;
+    }
+
+    public Rol getRol() {
+        return rol;
+    }
+
+    public void setRol(Rol rol) {
+        this.rol = rol;
     }
 
     public Boolean getActivo() {
