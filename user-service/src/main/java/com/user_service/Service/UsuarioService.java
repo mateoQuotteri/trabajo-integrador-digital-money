@@ -1,6 +1,8 @@
 package com.user_service.Service;
 
 import com.user_service.Dtos.LoginResponse;
+import com.user_service.Dtos.PatchUsuarioRequest;
+import com.user_service.Dtos.UsuarioResponse;
 import com.user_service.Entity.SesionUsuario;
 import com.user_service.Entity.Usuario;
 import com.user_service.Exception.ContrasenaIncorrectaException;
@@ -104,6 +106,52 @@ public class UsuarioService {
         );
 
         return new LoginResponse(token, userDto);
+    }
+
+    public UsuarioResponse obtenerPerfil(Long id, Long userId) {
+        if (!id.equals(userId)) {
+            throw new SecurityException("No tienes permiso para ver este perfil");
+        }
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado con id: " + id));
+        return toResponse(usuario);
+    }
+
+    public UsuarioResponse actualizarPerfil(Long id, Long userId, PatchUsuarioRequest request) {
+        if (!id.equals(userId)) {
+            throw new SecurityException("No tienes permiso para modificar este perfil");
+        }
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado con id: " + id));
+
+        if (request.getNombre() != null && !request.getNombre().isBlank()) {
+            usuario.setNombre(request.getNombre());
+        }
+        if (request.getApellido() != null && !request.getApellido().isBlank()) {
+            usuario.setApellido(request.getApellido());
+        }
+        if (request.getTelefono() != null && !request.getTelefono().isBlank()) {
+            usuario.setTelefono(request.getTelefono());
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        usuarioRepository.save(usuario);
+        return toResponse(usuario);
+    }
+
+    private UsuarioResponse toResponse(Usuario usuario) {
+        return new UsuarioResponse(
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getApellido(),
+                usuario.getDni(),
+                usuario.getEmail(),
+                usuario.getTelefono(),
+                usuario.getCvu(),
+                usuario.getAlias()
+        );
     }
 
     public void logout(String token) {
