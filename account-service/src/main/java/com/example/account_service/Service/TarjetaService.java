@@ -5,6 +5,7 @@ import com.example.account_service.Dto.TarjetaResponse;
 import com.example.account_service.Entity.Cuenta;
 import com.example.account_service.Entity.Tarjeta;
 import com.example.account_service.Exception.CuentaNotFoundException;
+import com.example.account_service.Exception.TarjetaNotFoundException;
 import com.example.account_service.Repository.CuentaRepository;
 import com.example.account_service.Repository.TarjetaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,20 @@ public class TarjetaService {
         );
         tarjetaRepository.save(tarjeta);
         return toResponse(tarjeta);
+    }
+
+    public void eliminarTarjeta(Long cuentaId, Long cardId, Long userId) {
+        Cuenta cuenta = cuentaRepository.findById(cuentaId)
+                .orElseThrow(() -> new CuentaNotFoundException("Cuenta no encontrada con id: " + cuentaId));
+
+        if (!cuenta.getUserId().equals(userId)) {
+            throw new SecurityException("No tienes permiso para acceder a esta cuenta");
+        }
+
+        Tarjeta tarjeta = tarjetaRepository.findByIdAndCuentaId(cardId, cuentaId)
+                .orElseThrow(() -> new TarjetaNotFoundException("Tarjeta no encontrada con id: " + cardId));
+
+        tarjetaRepository.delete(tarjeta);
     }
 
     private TarjetaResponse toResponse(Tarjeta tarjeta) {
